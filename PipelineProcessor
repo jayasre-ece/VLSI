@@ -1,0 +1,66 @@
+
+module PipelineProcessor (
+    input clk,
+    input reset
+);
+    localparam ADD  = 2'b00,
+               SUB  = 2'b01,
+               LOAD = 2'b10;
+    reg [15:0] registers [0:7];  
+    reg [15:0] memory [0:15];    
+
+    reg [3:0] PC;
+
+   
+    reg [15:0] IF_ID_IR;
+    reg [15:0] ID_EX_A, ID_EX_B, ID_EX_IR;
+    reg [15:0] EX_MEM_ALU_OUT, EX_MEM_B, EX_MEM_IR;
+    reg [15:0] MEM_WB_LMD, MEM_WB_ALU_OUT, MEM_WB_IR;
+
+    wire [1:0] opcode = IF_ID_IR[15:14];
+    wire [2:0] rd = IF_ID_IR[13:11];
+    wire [2:0] rs1 = IF_ID_IR[10:8];
+    wire [2:0] rs2 = IF_ID_IR[7:5];
+
+   
+    reg [15:0] instr_mem [0:15];
+    initial begin
+        instr_mem[0] = {ADD, 3'd1, 3'd2, 3'd3};   
+        instr_mem[1] = {SUB, 3'd4, 3'd1, 3'd3};   
+        instr_mem[2] = {LOAD, 3'd5, 3'd4, 3'd0};  
+        instr_mem[3] = 16'd0;                     
+    end
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            PC <= 0;
+            IF_ID_IR <= 0;
+            ID_EX_IR <= 0;
+            EX_MEM_IR <= 0;
+            MEM_WB_IR <= 0;
+        end else begin
+            if (MEM_WB_IR[15:14] == ADD || MEM_WB_IR[15:14] == SUB)
+                registers[MEM_WB_IR[13:11]] <= MEM_WB_ALU_OUT;
+            else if (MEM_WB_IR[15:14] == LOAD)
+                registers[MEM_WB_IR[13:11]] <= MEM_WB_LMD;
+
+            if (EX_MEM_IR[15:14] == LOAD)
+                MEM_WB_LMD <= memory[EX_MEM_ALU_OUT];
+            MEM_WB_ALU_OUT <= EX_MEM_ALU_OUT;
+            MEM_WB_IR <= EX_MEM_IR;
+            case (ID_EX_IR[15:14])
+                ADD:  EX_MEM_ALU_OUT <= ID_EX_A + ID_EX_B;
+                SUB:  EX_MEM_ALU_OUT <= ID_EX_A - ID_EX_B;
+                LOAD: EX_MEM_ALU_OUT <= ID_EX_A;  
+            endcase
+            EX_MEM_B <= ID_EX_B;
+            EX_MEM_IR <= ID_EX_IR;
+            ID_EX_IR <= IF_ID_IR;
+            ID_EX_A <= registers[rs1];
+            ID_EX_B <= registers[rs2];
+            IF_ID_IR <= instr_mem[PC];
+            PC <= PC + 1;
+        end
+    end
+
+endmodule
