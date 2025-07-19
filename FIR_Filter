@@ -1,0 +1,35 @@
+
+    module FIR_Filter (
+    input clk,
+    input rst,
+    input signed [7:0] x_in,
+    output reg signed [11:0] y_out
+);
+
+    parameter N = 4;
+    reg signed [7:0] h0 = 8'd1;
+    reg signed [7:0] h1 = 8'd2;
+    reg signed [7:0] h2 = 8'd3;
+    reg signed [7:0] h3 = 8'd4;
+    reg signed [7:0] shift_reg [0:N-1];
+
+    integer i;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            for (i = 0; i < N; i = i + 1)
+                shift_reg[i] <= 0;
+            y_out <= 0;
+        end else begin
+            for (i = N-1; i > 0; i = i - 1)
+                shift_reg[i] <= shift_reg[i-1];
+            shift_reg[0] <= x_in;
+
+            y_out <= shift_reg[0]*h0 +
+                     shift_reg[1]*h1 +
+                     shift_reg[2]*h2 +
+                     shift_reg[3]*h3;
+        end
+    end
+
+endmodule
