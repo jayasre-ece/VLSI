@@ -1,0 +1,38 @@
+
+
+module ALU (
+    input  [3:0] A,          
+    input  [3:0] B,          
+    input  [2:0] ALU_Sel,    
+    output reg [3:0] Result, 
+    output reg CarryOut      
+);
+
+    always @(*) begin
+        case (ALU_Sel)
+            3'b000: begin 
+                {CarryOut, Result} = A + B;
+            end
+            3'b001: begin 
+                {CarryOut, Result} = A - B;
+            end
+            3'b010: begin 
+                Result = A & B;
+                CarryOut = 0;
+            end
+            3'b011: begin 
+                Result = A | B;
+                CarryOut = 0;
+            end
+            3'b100: begin 
+                Result = ~A;
+                CarryOut = 0;
+            end
+            default: begin 
+                Result = 4'b0000;
+                CarryOut = 0;
+            end
+        endcase
+    end
+
+endmodule
